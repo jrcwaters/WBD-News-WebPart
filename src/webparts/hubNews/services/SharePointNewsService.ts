@@ -13,12 +13,15 @@ interface ISearchCell {
 interface ISearchRow {
   Cells: ISearchCell[];
 }
-interface ISearchResponse {
-  PrimaryQueryResult?: {
-    RelevantResults?: {
-      Table?: { Rows?: ISearchRow[] };
-    };
+interface ISearchResult {
+  RelevantResults?: {
+    Table?: { Rows?: ISearchRow[] };
   };
+}
+interface ISearchResponse {
+  PrimaryQueryResult?: ISearchResult;
+  // Some tenants nest the postquery result under a `postquery` property.
+  postquery?: { PrimaryQueryResult?: ISearchResult };
 }
 
 const SELECT_PROPERTIES: string =
@@ -38,8 +41,9 @@ const SITE_PATHS: { [source: string]: string } = {
  * News pages are identified by the managed property `PromotedState:2`.
  *
  * The query is scoped by the web part's "source"/"audience" settings and results
- * are normalised into {@link INewsItem}. Any failure resolves to an empty list so
- * the web part shows a graceful empty state rather than an error.
+ * are normalised into {@link INewsItem}. HTTP/network failures propagate so the web
+ * part can show a distinct error state; a successful query with no matches is an
+ * empty list.
  */
 export class SharePointNewsService implements INewsService {
   constructor(private readonly context: WebPartContext) {}
@@ -55,21 +59,30 @@ export class SharePointNewsService implements INewsService {
     const rowLimit = Math.max(1, Math.min(query.count || 5, 50));
     const queryText = this._buildQueryText(query);
 
-    const params = [
-      `querytext='${encodeURIComponent(queryText)}'`,
-      `selectproperties='${encodeURIComponent(SELECT_PROPERTIES)}'`,
-      `rowlimit=${rowLimit}`,
-      `sortlist='${encodeURIComponent('Created:descending')}'`,
-      `trimduplicates=false`,
-      `clienttype='ContentSearchRegular'`
-    ].join('&');
-
-    const endpoint = `${this.context.pageContext.web.absoluteUrl}/_api/search/query?${params}`;
-    const options: ISPHttpClientOptions = {
-      headers: { Accept: 'application/json; odata=nometadata' }
+    // POST /_api/search/postquery — the GET /query endpoint returns
+    // 500 "UnknownError" on some tenants once the query/sort params are
+    // URL-encoded. POST takes a JSON body and avoids that entirely.
+    const endpoint = `${this.context.pageContext.web.absoluteUrl}/_api/search/postquery`;
+    const requestBody = {
+      request: {
+        Querytext: queryText,
+        SelectProperties: SELECT_PROPERTIES.split(','),
+        RowLimit: rowLimit,
+        SortList: [{ Property: 'LastModifiedTime', Direction: 1 }],
+        TrimDuplicates: false,
+        ClientType: 'ContentSearchRegular'
+      }
     };
 
-    const response: SPHttpClientResponse = await this.context.spHttpClient.get(
+    const options: ISPHttpClientOptions = {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json;odata=nometadata'
+      },
+      body: JSON.stringify(requestBody)
+    };
+
+    const response: SPHttpClientResponse = await this.context.spHttpClient.post(
       endpoint,
       SPHttpClient.configurations.v1,
       options
@@ -84,7 +97,8 @@ export class SharePointNewsService implements INewsService {
     }
 
     const json: ISearchResponse = await response.json();
-    const rows = json.PrimaryQueryResult?.RelevantResults?.Table?.Rows ?? [];
+    const primary = json.PrimaryQueryResult ?? json.postquery?.PrimaryQueryResult;
+    const rows = primary?.RelevantResults?.Table?.Rows ?? [];
     console.info(`[Hub News] Query "${queryText}" returned ${rows.length} row(s). Endpoint: ${endpoint}`);
     return rows;
   }

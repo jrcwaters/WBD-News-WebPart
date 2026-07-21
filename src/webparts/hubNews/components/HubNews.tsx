@@ -6,7 +6,7 @@ import { LeadListLayout } from './layouts/LeadListLayout';
 import { GridLayout } from './layouts/GridLayout';
 import { CompactLayout } from './layouts/CompactLayout';
 
-type Status = 'loading' | 'ready' | 'empty';
+type Status = 'loading' | 'ready' | 'empty' | 'error';
 
 const HubNews: React.FC<IHubNewsProps> = (props) => {
   const { title, layout, source, audience, itemCount, seeAllText, seeAllUrl, service, dataMode } = props;
@@ -36,7 +36,7 @@ const HubNews: React.FC<IHubNewsProps> = (props) => {
       .catch(() => {
         if (!cancelled) {
           setItems([]);
-          setStatus('empty');
+          setStatus('error');
         }
       });
 
@@ -85,8 +85,15 @@ const HubNews: React.FC<IHubNewsProps> = (props) => {
         <div className={styles.state}>
           No news to show yet.
           {dataMode === 'sharepoint'
-            ? ' Publish news pages, or check the Source and Audience settings for this web part.'
+            ? ' Nothing is indexed for this Source yet — publish News posts (not just pages), allow a few minutes for indexing, or widen the Source.'
             : ''}
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className={styles.state}>
+          Couldn’t load news — the search request failed. Open the browser console (F12) for the
+          query and status code, then check the Source / scope.
         </div>
       )}
 

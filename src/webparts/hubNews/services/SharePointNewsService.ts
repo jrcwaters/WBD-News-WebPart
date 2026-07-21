@@ -45,12 +45,10 @@ export class SharePointNewsService implements INewsService {
   constructor(private readonly context: WebPartContext) {}
 
   public async getNews(query: INewsQuery): Promise<INewsItem[]> {
-    try {
-      const rows = await this._runSearch(query);
-      return rows.map((row) => this._mapRow(row)).filter((item) => !!item.title);
-    } catch {
-      return [];
-    }
+    // Errors propagate so the web part can show a distinct "couldn't load" state
+    // instead of an indistinguishable "no news" — see HubNews.tsx.
+    const rows = await this._runSearch(query);
+    return rows.map((row) => this._mapRow(row)).filter((item) => !!item.title);
   }
 
   private async _runSearch(query: INewsQuery): Promise<ISearchRow[]> {
@@ -78,11 +76,17 @@ export class SharePointNewsService implements INewsService {
     );
 
     if (!response.ok) {
-      return [];
+      const body = await response.text().catch(() => '');
+      console.error(
+        `[Hub News] Search request failed (${response.status}) for query "${queryText}". ${body.slice(0, 400)}`
+      );
+      throw new Error(`Hub News search request failed (${response.status})`);
     }
 
     const json: ISearchResponse = await response.json();
-    return json.PrimaryQueryResult?.RelevantResults?.Table?.Rows ?? [];
+    const rows = json.PrimaryQueryResult?.RelevantResults?.Table?.Rows ?? [];
+    console.info(`[Hub News] Query "${queryText}" returned ${rows.length} row(s). Endpoint: ${endpoint}`);
+    return rows;
   }
 
   private _buildQueryText(query: INewsQuery): string {

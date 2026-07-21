@@ -22,9 +22,9 @@
     "description": { "default": "Configurable news roll-up — Lead + list, Grid or Compact layout." },
     "officeFabricIconFontName": "News",
     "properties": {
-      "title": "Firm News",
+      "title": "Latest news",
       "layout": "lead",
-      "source": "firmwide",
+      "source": "all",
       "audience": "",
       "itemCount": 5,
       "seeAllText": "See all news",

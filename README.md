@@ -29,8 +29,8 @@ collapse correctly inside narrow SharePoint columns, not just at viewport breakp
 | --- | --- | --- |
 | `title` | Text | Heading shown next to the yellow accent bar (e.g. "Firm News"). |
 | `layout` | Choice group | `lead` / `grid` / `compact`. |
-| `source` | Dropdown | `firmwide` (hub roll-up), `office`, `practice`, `custom`. Shapes the roll-up query and the sample set. |
-| `audience` | Text | Office/practice name, a **site URL** to scope the roll-up to, or (Custom) a raw **KQL** fragment. |
+| `source` | Dropdown | `all` (everything you can see), `growth` (**Growth @ WBD** — `/sites/SPIN_OurStrategy`), `you` (**You & WBD** — `/sites/SPIN_News`), `custom`. |
+| `audience` | Text | Only for `all` (optional extra filter) and `custom` (a **site URL** → Path filter, or a raw **KQL** fragment). Ignored for the named feeds. |
 | `itemCount` | Slider (1–8) | Number of stories to show. |
 | `seeAllText` / `seeAllUrl` | Text | Optional "See all" link in the header. |
 | `useMockData` | Toggle | **On** = built-in sample content (default, great for the workbench). **Off** = live SharePoint news. |
@@ -42,13 +42,16 @@ The rendering layer is decoupled from the data via `INewsService`:
 - **`MockNewsService`** — built-in sample stories that mirror the design spec, keyed by
   `source`. Lets the web part render fully in the workbench and anywhere the live roll-up
   is turned off.
-- **`SharePointNewsService`** — rolls up modern SharePoint **news pages** across the hub
-  using the Search REST API (`PromotedState:2`), scoped by `source` / `audience`, sorted
-  by most recent. Any failure degrades to a graceful empty state rather than an error.
+- **`SharePointNewsService`** — rolls up modern SharePoint **news pages** using the Search
+  REST API (`PromotedState:2`), sorted by most recent. `all` is tenant-wide; `growth` and
+  `you` scope to their sites via a `Path:` filter whose absolute URL is resolved from the
+  current tenant origin at runtime (no hard-coded host). Any failure degrades to a graceful
+  empty state rather than an error.
 
 To point the web part at live news, turn **Use sample content** off in the property pane.
-Category → pill-tone mapping in `SharePointNewsService` / `newsUtils.ts` is intentionally
-simple and can be tuned to your managed properties.
+The named feeds live in `SITE_PATHS` at the top of `SharePointNewsService.ts` — edit those
+server-relative paths (or add more) if a feed moves. Category → pill-tone mapping in
+`newsUtils.ts` is intentionally simple and can be tuned to your managed properties.
 
 ## Build & deploy
 

@@ -1,14 +1,20 @@
 import { INewsItem } from '../models/INewsItem';
 
-/** Semantic news source that shapes which stories are rolled up. */
-export type NewsSource = 'firmwide' | 'office' | 'practice' | 'custom';
+/**
+ * News source that shapes which stories are rolled up:
+ *  - 'all'    → everything the viewer can see (tenant-wide).
+ *  - 'growth' → the "Growth @ WBD" feed (/sites/SPIN_OurStrategy).
+ *  - 'you'    → the "You & WBD" feed (/sites/SPIN_News).
+ *  - 'custom' → scoped by a site URL or raw KQL in `audience`.
+ */
+export type NewsSource = 'all' | 'growth' | 'you' | 'custom';
 
 export interface INewsQuery {
   /** Which roll-up to run. */
   source: NewsSource;
   /**
-   * Audience / scope qualifier:
-   *  - For 'office' / 'practice': an audience label (also used to match content in sample mode).
+   * Scope qualifier. Ignored for the named site feeds ('growth' / 'you').
+   *  - For 'all': an optional extra filter — a site URL (Path) or a search term.
    *  - For 'custom': a site URL (adds a Path filter) or a raw KQL fragment.
    */
   audience?: string;

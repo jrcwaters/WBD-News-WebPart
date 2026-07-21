@@ -25,6 +25,15 @@ const SELECT_PROPERTIES: string =
   'Title,Path,PictureThumbnailURL,Created,Author,SiteTitle,Description';
 
 /**
+ * Server-relative paths for the named site feeds. The absolute URL is resolved
+ * against the current tenant origin at runtime, so there is no hard-coded host.
+ */
+const SITE_PATHS: { [source: string]: string } = {
+  growth: '/sites/SPIN_OurStrategy', // "Growth @ WBD"
+  you: '/sites/SPIN_News' // "You & WBD"
+};
+
+/**
  * Rolls up modern SharePoint news pages across the hub using the Search REST API.
  * News pages are identified by the managed property `PromotedState:2`.
  *
@@ -79,23 +88,39 @@ export class SharePointNewsService implements INewsService {
   private _buildQueryText(query: INewsQuery): string {
     let kql = 'PromotedState:2';
     const audience = (query.audience || '').trim();
+    const sitePath = SITE_PATHS[query.source];
 
-    if (query.source === 'custom') {
-      // Treat the audience field as a raw KQL fragment for advanced scoping.
+    if (sitePath) {
+      // A named site feed (Growth @ WBD / You & WBD) — scope to that site's pages.
+      kql += ` Path:${this._absoluteUrl(sitePath)}/*`;
+    } else if (query.source === 'custom') {
+      // Custom: a site URL (Path filter) or a raw KQL fragment.
       if (audience) {
-        kql += ` ${audience}`;
+        kql += this._looksLikeUrl(audience) ? this._pathFilter(audience) : ` ${audience}`;
       }
     } else if (audience) {
-      if (/^https?:\/\//i.test(audience) || audience.charAt(0) === '/') {
-        // A site/path was supplied — scope the roll-up to it.
-        kql += ` Path:${audience.replace(/\/+$/, '')}*`;
-      } else {
-        // A label (office / practice name) — narrow results by matching term.
-        kql += ` "${audience}"`;
-      }
+      // 'all' with an optional extra filter — a site URL, or a search term.
+      kql += this._looksLikeUrl(audience) ? this._pathFilter(audience) : ` "${audience}"`;
     }
 
     return kql;
+  }
+
+  /** Builds a ` Path:<abs>*` scope, resolving a server-relative path to absolute. */
+  private _pathFilter(input: string): string {
+    const trimmed = input.replace(/\/+$/, '');
+    const abs = /^https?:\/\//i.test(trimmed) ? trimmed : this._absoluteUrl(trimmed);
+    return ` Path:${abs}*`;
+  }
+
+  private _looksLikeUrl(value: string): boolean {
+    return /^https?:\/\//i.test(value) || value.charAt(0) === '/';
+  }
+
+  /** Prefixes a server-relative path with the current tenant origin. */
+  private _absoluteUrl(relativePath: string): string {
+    const origin = this.context.pageContext.web.absoluteUrl.split('/').slice(0, 3).join('/');
+    return origin + relativePath;
   }
 
   private _mapRow(row: ISearchRow): INewsItem {

@@ -10,9 +10,9 @@ declare interface IHubNewsWebPartStrings {
 
   SourceGroupName: string;
   SourceFieldLabel: string;
-  SourceFirmwide: string;
-  SourceOffice: string;
-  SourcePractice: string;
+  SourceAll: string;
+  SourceGrowth: string;
+  SourceYou: string;
   SourceCustom: string;
   AudienceFieldLabel: string;
   AudienceFieldDescription: string;

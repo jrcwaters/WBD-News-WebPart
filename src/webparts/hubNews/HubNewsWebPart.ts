@@ -45,7 +45,7 @@ export default class HubNewsWebPart extends BaseClientSideWebPart<IHubNewsWebPar
     const element: React.ReactElement<IHubNewsProps> = React.createElement(HubNews, {
       title: this.properties.title || '',
       layout: this.properties.layout || 'lead',
-      source: this.properties.source || 'firmwide',
+      source: this.properties.source || 'all',
       audience: this.properties.audience || '',
       itemCount: this.properties.itemCount || 5,
       seeAllText: this.properties.seeAllText || '',
@@ -95,9 +95,9 @@ export default class HubNewsWebPart extends BaseClientSideWebPart<IHubNewsWebPar
                 PropertyPaneDropdown('source', {
                   label: strings.SourceFieldLabel,
                   options: [
-                    { key: 'firmwide', text: strings.SourceFirmwide },
-                    { key: 'office', text: strings.SourceOffice },
-                    { key: 'practice', text: strings.SourcePractice },
+                    { key: 'all', text: strings.SourceAll },
+                    { key: 'growth', text: strings.SourceGrowth },
+                    { key: 'you', text: strings.SourceYou },
                     { key: 'custom', text: strings.SourceCustom }
                   ]
                 }),

@@ -20,8 +20,6 @@ interface ISearchResult {
 }
 interface ISearchResponse {
   PrimaryQueryResult?: ISearchResult;
-  // Some tenants nest the postquery result under a `postquery` property.
-  postquery?: { PrimaryQueryResult?: ISearchResult };
 }
 
 const SELECT_PROPERTIES: string =
@@ -38,7 +36,8 @@ const SITE_PATHS: { [source: string]: string } = {
 
 /**
  * Rolls up modern SharePoint news pages across the hub using the Search REST API.
- * News pages are identified by the managed property `PromotedState:2`.
+ * News pages are identified by the managed property `PromotedState=2` (numeric —
+ * `=`, not `:`, which SharePoint rejects with a generic 500 "UnknownError").
  *
  * The query is scoped by the web part's "source"/"audience" settings and results
  * are normalised into {@link INewsItem}. HTTP/network failures propagate so the web
@@ -52,37 +51,33 @@ export class SharePointNewsService implements INewsService {
     // Errors propagate so the web part can show a distinct "couldn't load" state
     // instead of an indistinguishable "no news" — see HubNews.tsx.
     const rows = await this._runSearch(query);
-    return rows.map((row) => this._mapRow(row)).filter((item) => !!item.title);
+    rows.sort((a, b) => this._created(b) - this._created(a)); // newest first
+    return rows
+      .map((row) => this._mapRow(row))
+      .filter((item) => !!item.title)
+      .slice(0, Math.max(1, query.count || rows.length));
   }
 
   private async _runSearch(query: INewsQuery): Promise<ISearchRow[]> {
-    const rowLimit = Math.max(1, Math.min(query.count || 5, 50));
     const queryText = this._buildQueryText(query);
+    // Over-fetch, then sort newest-first client-side, so no `sortlist` parameter
+    // is sent (keeps the request to the shape verified working on the tenant).
+    const rowLimit = Math.min(50, Math.max(query.count || 5, 25));
 
-    // POST /_api/search/postquery — the GET /query endpoint returns
-    // 500 "UnknownError" on some tenants once the query/sort params are
-    // URL-encoded. POST takes a JSON body and avoids that entirely.
-    const endpoint = `${this.context.pageContext.web.absoluteUrl}/_api/search/postquery`;
-    const requestBody = {
-      request: {
-        Querytext: queryText,
-        SelectProperties: SELECT_PROPERTIES.split(','),
-        RowLimit: rowLimit,
-        SortList: [{ Property: 'LastModifiedTime', Direction: 1 }],
-        TrimDuplicates: false,
-        ClientType: 'ContentSearchRegular'
-      }
-    };
+    const params = [
+      `querytext='${encodeURIComponent(queryText)}'`,
+      `selectproperties='${encodeURIComponent(SELECT_PROPERTIES)}'`,
+      `rowlimit=${rowLimit}`,
+      `trimduplicates=false`,
+      `clienttype='ContentSearchRegular'`
+    ].join('&');
 
+    const endpoint = `${this.context.pageContext.web.absoluteUrl}/_api/search/query?${params}`;
     const options: ISPHttpClientOptions = {
-      headers: {
-        Accept: 'application/json;odata=nometadata',
-        'Content-Type': 'application/json;odata=nometadata'
-      },
-      body: JSON.stringify(requestBody)
+      headers: { Accept: 'application/json;odata=nometadata' }
     };
 
-    const response: SPHttpClientResponse = await this.context.spHttpClient.post(
+    const response: SPHttpClientResponse = await this.context.spHttpClient.get(
       endpoint,
       SPHttpClient.configurations.v1,
       options
@@ -97,14 +92,13 @@ export class SharePointNewsService implements INewsService {
     }
 
     const json: ISearchResponse = await response.json();
-    const primary = json.PrimaryQueryResult ?? json.postquery?.PrimaryQueryResult;
-    const rows = primary?.RelevantResults?.Table?.Rows ?? [];
-    console.info(`[Hub News] Query "${queryText}" returned ${rows.length} row(s). Endpoint: ${endpoint}`);
+    const rows = json.PrimaryQueryResult?.RelevantResults?.Table?.Rows ?? [];
+    console.info(`[Hub News] Query "${queryText}" returned ${rows.length} row(s).`);
     return rows;
   }
 
   private _buildQueryText(query: INewsQuery): string {
-    let kql = 'PromotedState:2';
+    let kql = 'PromotedState=2';
     const audience = (query.audience || '').trim();
     const sitePath = SITE_PATHS[query.source];
 
@@ -164,6 +158,17 @@ export class SharePointNewsService implements INewsService {
       url: map.Path || undefined,
       imageUrl: map.PictureThumbnailURL || undefined
     };
+  }
+
+  /** Created timestamp (ms) from a row, for newest-first client-side sorting. */
+  private _created(row: ISearchRow): number {
+    for (const cell of row.Cells) {
+      if (cell.Key === 'Created' && cell.Value) {
+        const time = new Date(cell.Value).getTime();
+        return isNaN(time) ? 0 : time;
+      }
+    }
+    return 0;
   }
 
   private _clamp(text: string | undefined, max: number): string {

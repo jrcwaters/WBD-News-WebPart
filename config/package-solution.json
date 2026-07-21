@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "hub-news-client-side-solution",
+    "id": "67455328-7e59-4e61-b74d-d6bfae15ae18",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "WBD",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.21.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Configurable Hub News web part for the intranet."
+      },
+      "longDescription": {
+        "default": "A single configurable news web part with three layout modes (Lead + list, Grid, Compact). Drop it multiple times with different property settings to build firm-wide, office and practice-group news across the hub."
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "hub-news Feature",
+        "description": "The feature that activates elements of the hub-news solution.",
+        "id": "1d4da233-d089-4806-9eb7-6030cd9cc9b4",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/hub-news.sppkg"
+  }
+}

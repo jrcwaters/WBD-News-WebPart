@@ -1,0 +1,380 @@
+/* ------------------------------------------------------------------ *
+ * Hub News — styling ported 1:1 from the design spec.
+ *   firm blue  #173a70   accent yellow #ffc72c   soft accent #fff4cc
+ *   card radius 6px, resting + hover shadows, tag-pill tones, hovers.
+ * Layouts respond to the web part's own width via container queries,
+ * so they collapse correctly inside narrow SharePoint columns.
+ * ------------------------------------------------------------------ */
+
+$firm-blue: #173a70;
+$firm-blue-deep: #0f2850;
+$accent: #ffc72c;
+$accent-soft: #fff4cc;
+$accent-ink: #8a6400;
+$link: #2e5ea8;
+$ink: #252423;
+$ink-soft: #605e5c;
+$line: #e5e3e1;
+$card: #ffffff;
+$ok: #0b6a3c;
+$tag-firm-bg: #e5edf9;
+$tag-people-bg: #e7f3ec;
+
+$shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.08), 0 0.3px 0.9px rgba(0, 0, 0, 0.06);
+$shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.12);
+$radius: 6px;
+
+.hubNews {
+  container-type: inline-size;
+  container-name: hubnews;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: $ink;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+/* -------- web part header -------- */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.accent {
+  width: 4px;
+  height: 20px;
+  background: $accent;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.title {
+  font-size: 17px;
+  font-weight: 600;
+  color: $firm-blue;
+  margin: 0;
+}
+.seeAll {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: $link;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* -------- shared card atoms -------- */
+.tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 3px;
+  background: $accent-soft;
+  color: $accent-ink;
+}
+.toneFirm {
+  background: $tag-firm-bg;
+  color: $firm-blue;
+}
+.tonePeople {
+  background: $tag-people-bg;
+  color: $ok;
+}
+.toneOffice {
+  background: $accent-soft;
+  color: $accent-ink;
+}
+.toneDefault {
+  background: $accent-soft;
+  color: $accent-ink;
+}
+
+.byline {
+  font-size: 12px;
+  color: $ink-soft;
+
+  b {
+    color: $ink;
+    font-weight: 600;
+  }
+}
+
+.thumb {
+  background-size: cover;
+  background-position: center;
+  border-radius: 5px;
+  background-color: $firm-blue;
+}
+.g1 {
+  background: linear-gradient(135deg, #173a70, #2e5ea8);
+}
+.g2 {
+  background: linear-gradient(135deg, #2e5395, #7fa3d7);
+}
+.g3 {
+  background: linear-gradient(135deg, #0b6a3c, #7fc79f);
+}
+.g4 {
+  background: linear-gradient(135deg, #b3520a, #efb083);
+}
+.g5 {
+  background: linear-gradient(135deg, #5a3a86, #a98fd0);
+}
+
+/* focus ring for keyboard users (cards are links) */
+.lead,
+.sideItem,
+.newsCard,
+.compactItem,
+.seeAll {
+  &:focus-visible {
+    outline: 2px solid $accent;
+    outline-offset: 2px;
+  }
+}
+
+/* ---------- LAYOUT A: lead + list ---------- */
+.leadLayout {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+.lead {
+  background: $card;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: $shadow-hover;
+  }
+
+  .thumb {
+    height: 230px;
+    border-radius: 0;
+    position: relative;
+  }
+  .tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+  }
+  .body {
+    padding: 18px 20px 20px;
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: $firm-blue;
+    line-height: 1.3;
+    margin: 0;
+  }
+  p {
+    font-size: 13.5px;
+    color: $ink-soft;
+    margin: 8px 0 0;
+    line-height: 1.5;
+  }
+  .byline {
+    margin-top: 14px;
+  }
+}
+
+.sideList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sideItem {
+  background: $card;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+
+  &:hover {
+    box-shadow: $shadow-hover;
+  }
+
+  .thumb {
+    width: 78px;
+    height: 64px;
+    flex-shrink: 0;
+  }
+  .siBody {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  h4 {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: $ink;
+    line-height: 1.35;
+    margin: 0;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+/* ---------- LAYOUT B: card grid ---------- */
+.gridLayout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.newsCard {
+  background: $card;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+
+  &:hover {
+    box-shadow: $shadow-hover;
+    transform: translateY(-2px);
+  }
+
+  .thumb {
+    height: 130px;
+    border-radius: 0;
+    position: relative;
+  }
+  .tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+  }
+  .body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: $firm-blue;
+    line-height: 1.35;
+    margin: 0;
+  }
+  p {
+    font-size: 12.5px;
+    color: $ink-soft;
+    line-height: 1.5;
+    flex: 1;
+    margin: 0;
+  }
+  .byline {
+    margin-top: auto;
+  }
+}
+
+/* ---------- LAYOUT C: compact list ---------- */
+.compactLayout {
+  background: $card;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  overflow: hidden;
+}
+.compactItem {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 18px;
+  border-bottom: 1px solid $line;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: $accent-soft;
+  }
+
+  .thumb {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+  }
+  .ciBody {
+    min-width: 0;
+    flex: 1;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: $ink;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .chev {
+    color: $ink-soft;
+    font-size: 18px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+}
+
+/* -------- loading / empty state -------- */
+.state {
+  font-size: 12.5px;
+  color: $ink-soft;
+  padding: 12px 16px;
+  background: $card;
+  border-left: 3px solid $accent;
+  border-radius: 0 4px 4px 0;
+  box-shadow: $shadow;
+}
+
+/* -------- responsive: react to the web part's own width -------- */
+@container hubnews (max-width: 820px) {
+  .leadLayout {
+    grid-template-columns: 1fr;
+  }
+  .gridLayout {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@container hubnews (max-width: 560px) {
+  .gridLayout {
+    grid-template-columns: 1fr;
+  }
+}

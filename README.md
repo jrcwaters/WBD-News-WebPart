@@ -43,7 +43,9 @@ The rendering layer is decoupled from the data via `INewsService`:
   `source`. Lets the web part render fully in the workbench and anywhere the live roll-up
   is turned off.
 - **`SharePointNewsService`** — rolls up modern SharePoint **news pages** using the Search
-  REST API (`PromotedState=2` — numeric, so `=` not `:`), sorted client-side by most recent. `all` is tenant-wide; `growth` and
+  REST **POST `postquery`** endpoint (`PromotedState=2`; POST keeps the query in the body so
+  the querytext quotes aren't URL-encoded, which the GET endpoint rejects), sorted
+  client-side by most recent. `all` is tenant-wide; `growth` and
   `you` scope to their sites via a `Path:` filter whose absolute URL is resolved from the
   current tenant origin at runtime (no hard-coded host). Any failure degrades to a graceful
   empty state rather than an error.

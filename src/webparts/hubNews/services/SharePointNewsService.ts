@@ -20,6 +20,9 @@ interface ISearchResult {
 }
 interface ISearchResponse {
   PrimaryQueryResult?: ISearchResult;
+  // POST /postquery may nest the result under `postquery` (or `d.postquery`).
+  postquery?: { PrimaryQueryResult?: ISearchResult };
+  d?: { postquery?: { PrimaryQueryResult?: ISearchResult } };
 }
 
 const SELECT_PROPERTIES: string =
@@ -60,24 +63,32 @@ export class SharePointNewsService implements INewsService {
 
   private async _runSearch(query: INewsQuery): Promise<ISearchRow[]> {
     const queryText = this._buildQueryText(query);
-    // Over-fetch, then sort newest-first client-side, so no `sortlist` parameter
-    // is sent (keeps the request to the shape verified working on the tenant).
+    // Over-fetch, then sort newest-first client-side (no sortlist parameter).
     const rowLimit = Math.min(50, Math.max(query.count || 5, 25));
 
-    const params = [
-      `querytext='${this._encodeQueryText(queryText)}'`,
-      `selectproperties='${SELECT_PROPERTIES}'`,
-      `rowlimit=${rowLimit}`,
-      `trimduplicates=false`,
-      `clienttype='ContentSearchRegular'`
-    ].join('&');
-
-    const endpoint = `${this.context.pageContext.web.absoluteUrl}/_api/search/query?${params}`;
-    const options: ISPHttpClientOptions = {
-      headers: { Accept: 'application/json;odata=nometadata' }
+    // POST /_api/search/postquery — the query travels in the JSON body, so nothing
+    // in it is URL-encoded. (On the GET /query endpoint SPHttpClient percent-encodes
+    // the querytext single quotes to %27, which SharePoint search rejects with 500.)
+    const endpoint = `${this.context.pageContext.web.absoluteUrl}/_api/search/postquery`;
+    const requestBody = {
+      request: {
+        Querytext: queryText,
+        RowLimit: rowLimit,
+        TrimDuplicates: false,
+        ClientType: 'ContentSearchRegular',
+        SelectProperties: SELECT_PROPERTIES.split(',')
+      }
     };
 
-    const response: SPHttpClientResponse = await this.context.spHttpClient.get(
+    const options: ISPHttpClientOptions = {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json;odata=nometadata'
+      },
+      body: JSON.stringify(requestBody)
+    };
+
+    const response: SPHttpClientResponse = await this.context.spHttpClient.post(
       endpoint,
       SPHttpClient.configurations.v1,
       options
@@ -92,19 +103,11 @@ export class SharePointNewsService implements INewsService {
     }
 
     const json: ISearchResponse = await response.json();
-    const rows = json.PrimaryQueryResult?.RelevantResults?.Table?.Rows ?? [];
+    const primary =
+      json.PrimaryQueryResult ?? json.postquery?.PrimaryQueryResult ?? json.d?.postquery?.PrimaryQueryResult;
+    const rows = primary?.RelevantResults?.Table?.Rows ?? [];
     console.info(`[Hub News] Query "${queryText}" returned ${rows.length} row(s).`);
     return rows;
-  }
-
-  /**
-   * Encodes the KQL for the `querytext` parameter WITHOUT touching the operators.
-   * SharePoint returns 500 "UnknownError" if `=` / `:` arrive percent-encoded
-   * (%3D / %3A) — a raw operator is required — so we only escape OData single
-   * quotes and encode spaces. (Verified against the tenant: raw `=` works.)
-   */
-  private _encodeQueryText(text: string): string {
-    return text.replace(/'/g, "''").replace(/ /g, '%20');
   }
 
   private _buildQueryText(query: INewsQuery): string {

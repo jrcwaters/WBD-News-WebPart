@@ -1,5 +1,9 @@
 import { NewsTone } from '../models/INewsItem';
 
+// Note: relative-date formatting (formatRelativeDate) now lives in the shared
+// @wbd/hub-core library and is imported directly where needed. Only the
+// News-specific presentation helpers remain here.
+
 /** Number of brand gradient fallbacks available (g1…g5 in the stylesheet). */
 export const GRADIENT_COUNT: number = 5;
 
@@ -34,35 +38,4 @@ export function toneFromCategory(category: string | undefined): NewsTone {
     return 'office';
   }
   return 'default';
-}
-
-/**
- * Human-friendly relative date used in the byline:
- * "Today", "Yesterday", a weekday name for the last week, otherwise a short date.
- */
-export function formatRelativeDate(input: Date | string | undefined): string {
-  if (!input) {
-    return '';
-  }
-  const date = typeof input === 'string' ? new Date(input) : input;
-  if (isNaN(date.getTime())) {
-    return '';
-  }
-
-  const startOfDay = (d: Date): number =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-
-  const oneDay = 24 * 60 * 60 * 1000;
-  const diffDays = Math.round((startOfDay(new Date()) - startOfDay(date)) / oneDay);
-
-  if (diffDays <= 0) {
-    return 'Today';
-  }
-  if (diffDays === 1) {
-    return 'Yesterday';
-  }
-  if (diffDays < 7) {
-    return date.toLocaleDateString(undefined, { weekday: 'long' });
-  }
-  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }

@@ -5,7 +5,7 @@ import { INewsItem } from '../models/INewsItem';
  *  - 'all'    → the firm's news sites, merged.
  *  - 'growth' → the "Growth @ WBD" feed (/sites/SPIN_OurStrategy).
  *  - 'you'    → the "You & WBD" feed (/sites/SPIN_News).
- *  - 'picker' → a site chosen with the property-pane site search (URL in `audience`).
+ *  - 'picker' → one or more sites chosen with the property-pane site search (URLs in `sites`).
  *  - 'custom' → a site URL typed into `audience`.
  */
 export type NewsSource = 'all' | 'growth' | 'you' | 'picker' | 'custom';
@@ -27,7 +27,8 @@ export interface INewsQuery {
 
 /**
  * Abstraction over a news provider. Implemented by {@link MockNewsService}
- * (built-in sample content) and {@link SharePointNewsService} (live Search roll-up).
+ * (built-in sample content) and {@link SharePointNewsService} (live SharePoint
+ * News roll-up via the list REST API).
  */
 export interface INewsService {
   getNews(query: INewsQuery): Promise<INewsItem[]>;

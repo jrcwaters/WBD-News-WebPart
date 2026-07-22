@@ -1,187 +1,136 @@
 import { WebPartContext } from '@microsoft/sp-webpart-base';
-import { SPHttpClient, SPHttpClientResponse, ISPHttpClientOptions } from '@microsoft/sp-http';
+import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import { INewsItem } from '../models/INewsItem';
 import { INewsService, INewsQuery } from './INewsService';
-import { formatRelativeDate, toneFromCategory } from './newsUtils';
+import { formatRelativeDate } from './newsUtils';
 
-interface ISearchCell {
-  Key: string;
-  // The Search REST API returns null (not undefined) for empty cells.
-  // eslint-disable-next-line @rushstack/no-new-null
-  Value: string | null;
+interface IListItem {
+  Title?: string;
+  FileRef?: string;
+  Description?: string;
+  BannerImageUrl?: { Url?: string };
+  FirstPublishedDate?: string;
+  Created?: string;
+  Modified?: string;
+  Author?: { Title?: string };
 }
-interface ISearchRow {
-  Cells: ISearchCell[];
+interface IListResponse {
+  value?: IListItem[];
 }
-interface ISearchResult {
-  RelevantResults?: {
-    Table?: { Rows?: ISearchRow[] };
-  };
-}
-interface ISearchResponse {
-  PrimaryQueryResult?: ISearchResult;
-  // POST /postquery may nest the result under `postquery` (or `d.postquery`).
-  postquery?: { PrimaryQueryResult?: ISearchResult };
-  d?: { postquery?: { PrimaryQueryResult?: ISearchResult } };
+interface IDatedItem {
+  item: INewsItem;
+  date: number;
 }
 
-const SELECT_PROPERTIES: string =
-  'Title,Path,PictureThumbnailURL,Created,Author,SiteTitle,Description';
-
-/**
- * Server-relative paths for the named site feeds. The absolute URL is resolved
- * against the current tenant origin at runtime, so there is no hard-coded host.
- */
+/** Server-relative paths for the named site feeds. */
 const SITE_PATHS: { [source: string]: string } = {
   growth: '/sites/SPIN_OurStrategy', // "Growth @ WBD"
   you: '/sites/SPIN_News' // "You & WBD"
 };
 
+/** News posts are Site Pages with PromotedState = 2. */
+const ITEM_QUERY: string =
+  "$select=Title,FileRef,Description,BannerImageUrl,FirstPublishedDate,Created,Modified,Author/Title" +
+  '&$expand=Author&$filter=PromotedState eq 2&$orderby=FirstPublishedDate desc';
+
 /**
- * Rolls up modern SharePoint news pages across the hub using the Search REST API.
- * News pages are identified by the managed property `PromotedState=2` (numeric —
- * `=`, not `:`, which SharePoint rejects with a generic 500 "UnknownError").
+ * Pulls modern SharePoint News posts (`PromotedState = 2`) directly from each site's
+ * "Site Pages" library via the list REST API. This deliberately avoids the Search
+ * service, whose query endpoints proved unreliable on this tenant (the GET endpoint
+ * URL-encodes the querytext quotes; the POST endpoint 500s). The list API is a plain,
+ * dependable call.
  *
- * The query is scoped by the web part's "source"/"audience" settings and results
- * are normalised into {@link INewsItem}. HTTP/network failures propagate so the web
- * part can show a distinct error state; a successful query with no matches is an
- * empty list.
+ * Named feeds query their own site; "All news" merges the firm's news sites. A failure
+ * on any one site is skipped so an unreachable site can't blank the whole web part.
  */
 export class SharePointNewsService implements INewsService {
   constructor(private readonly context: WebPartContext) {}
 
   public async getNews(query: INewsQuery): Promise<INewsItem[]> {
-    // Errors propagate so the web part can show a distinct "couldn't load" state
-    // instead of an indistinguishable "no news" — see HubNews.tsx.
-    const rows = await this._runSearch(query);
-    rows.sort((a, b) => this._created(b) - this._created(a)); // newest first
-    return rows
-      .map((row) => this._mapRow(row))
-      .filter((item) => !!item.title)
-      .slice(0, Math.max(1, query.count || rows.length));
+    const top = Math.max(1, query.count || 5);
+    const sites = this._targetSites(query);
+
+    const perSite = await Promise.all(
+      sites.map((site) => this._getSiteNews(site, top).catch(() => [] as IDatedItem[]))
+    );
+
+    const merged: IDatedItem[] = [];
+    for (const list of perSite) {
+      for (const entry of list) {
+        merged.push(entry);
+      }
+    }
+    merged.sort((a, b) => b.date - a.date); // newest first
+    return merged.slice(0, top).map((entry) => entry.item);
   }
 
-  private async _runSearch(query: INewsQuery): Promise<ISearchRow[]> {
-    const queryText = this._buildQueryText(query);
-    // Over-fetch, then sort newest-first client-side (no sortlist parameter).
-    const rowLimit = Math.min(50, Math.max(query.count || 5, 25));
+  /** Resolves which site collection(s) to read News from for a given query. */
+  private _targetSites(query: INewsQuery): string[] {
+    const origin = this._origin();
 
-    // POST /_api/search/postquery — the query travels in the JSON body, so nothing
-    // in it is URL-encoded. (On the GET /query endpoint SPHttpClient percent-encodes
-    // the querytext single quotes to %27, which SharePoint search rejects with 500.)
-    const endpoint = `${this.context.pageContext.web.absoluteUrl}/_api/search/postquery`;
-    const requestBody = {
-      request: {
-        Querytext: queryText,
-        RowLimit: rowLimit,
-        TrimDuplicates: false,
-        ClientType: 'ContentSearchRegular',
-        SelectProperties: SELECT_PROPERTIES.split(',')
+    if (query.source === 'growth' || query.source === 'you') {
+      return [origin + SITE_PATHS[query.source]];
+    }
+
+    if (query.source === 'custom') {
+      const audience = (query.audience || '').trim();
+      if (audience) {
+        const site = /^https?:\/\//i.test(audience)
+          ? audience.replace(/\/+$/, '')
+          : `${origin}/${audience.replace(/^\/+|\/+$/g, '')}`;
+        return [site];
       }
-    };
+      return [this.context.pageContext.web.absoluteUrl.replace(/\/+$/, '')];
+    }
 
-    const options: ISPHttpClientOptions = {
-      headers: {
-        Accept: 'application/json;odata=nometadata',
-        'Content-Type': 'application/json;odata=nometadata'
-      },
-      body: JSON.stringify(requestBody)
-    };
+    // 'all' — the firm's news sites.
+    return [origin + SITE_PATHS.growth, origin + SITE_PATHS.you];
+  }
 
-    const response: SPHttpClientResponse = await this.context.spHttpClient.post(
+  private async _getSiteNews(siteUrl: string, top: number): Promise<IDatedItem[]> {
+    const endpoint = `${siteUrl}/_api/web/lists/GetByTitle('Site Pages')/items?${ITEM_QUERY}&$top=${top}`;
+
+    const response: SPHttpClientResponse = await this.context.spHttpClient.get(
       endpoint,
       SPHttpClient.configurations.v1,
-      options
+      { headers: { Accept: 'application/json;odata=nometadata' } }
     );
 
     if (!response.ok) {
       const body = await response.text().catch(() => '');
       console.error(
-        `[Hub News] Search request failed (${response.status}) for query "${queryText}". ${body.slice(0, 400)}`
+        `[Hub News] News request failed (${response.status}) for ${siteUrl}. ${body.slice(0, 300)}`
       );
-      throw new Error(`Hub News search request failed (${response.status})`);
+      return [];
     }
 
-    const json: ISearchResponse = await response.json();
-    const primary =
-      json.PrimaryQueryResult ?? json.postquery?.PrimaryQueryResult ?? json.d?.postquery?.PrimaryQueryResult;
-    const rows = primary?.RelevantResults?.Table?.Rows ?? [];
-    console.info(`[Hub News] Query "${queryText}" returned ${rows.length} row(s).`);
-    return rows;
+    const json: IListResponse = await response.json();
+    const rows = json.value || [];
+    console.info(`[Hub News] ${siteUrl} returned ${rows.length} news post(s).`);
+
+    return rows.map((raw) => this._mapItem(raw)).filter((entry) => !!entry.item.title);
   }
 
-  private _buildQueryText(query: INewsQuery): string {
-    let kql = 'PromotedState=2';
-    const audience = (query.audience || '').trim();
-    const sitePath = SITE_PATHS[query.source];
+  private _mapItem(raw: IListItem): IDatedItem {
+    const origin = this._origin();
+    const dateStr = raw.FirstPublishedDate || raw.Modified || raw.Created || '';
+    const time = dateStr ? new Date(dateStr).getTime() : 0;
 
-    if (sitePath) {
-      // A named site feed (Growth @ WBD / You & WBD) — scope to that site's pages.
-      kql += ` Path:${this._absoluteUrl(sitePath)}/*`;
-    } else if (query.source === 'custom') {
-      // Custom: a site URL (Path filter) or a raw KQL fragment.
-      if (audience) {
-        kql += this._looksLikeUrl(audience) ? this._pathFilter(audience) : ` ${audience}`;
-      }
-    } else if (audience) {
-      // 'all' with an optional extra filter — a site URL, or a search term.
-      kql += this._looksLikeUrl(audience) ? this._pathFilter(audience) : ` "${audience}"`;
-    }
-
-    return kql;
-  }
-
-  /** Builds a ` Path:<abs>*` scope, resolving a server-relative path to absolute. */
-  private _pathFilter(input: string): string {
-    const trimmed = input.replace(/\/+$/, '');
-    const abs = /^https?:\/\//i.test(trimmed) ? trimmed : this._absoluteUrl(trimmed);
-    return ` Path:${abs}*`;
-  }
-
-  private _looksLikeUrl(value: string): boolean {
-    return /^https?:\/\//i.test(value) || value.charAt(0) === '/';
-  }
-
-  /** Prefixes a server-relative path with the current tenant origin. */
-  private _absoluteUrl(relativePath: string): string {
-    const origin = this.context.pageContext.web.absoluteUrl.split('/').slice(0, 3).join('/');
-    return origin + relativePath;
-  }
-
-  private _mapRow(row: ISearchRow): INewsItem {
-    const map: { [key: string]: string } = {};
-    for (const cell of row.Cells) {
-      if (cell.Value !== null && cell.Value !== undefined) {
-        map[cell.Key] = cell.Value;
-      }
-    }
-
-    const category = map.SiteTitle || '';
-    const author = (map.Author || map.SiteTitle || '').split(';')[0].trim();
-    const summary = this._clamp(map.Description, 200);
-
-    return {
-      id: map.Path || map.Title || Math.random().toString(36).slice(2),
-      title: map.Title || '',
-      summary: summary || undefined,
-      category: category || undefined,
-      tone: toneFromCategory(category),
-      author: author || undefined,
-      meta: formatRelativeDate(map.Created),
-      url: map.Path || undefined,
-      imageUrl: map.PictureThumbnailURL || undefined
+    const item: INewsItem = {
+      id: raw.FileRef || raw.Title || Math.random().toString(36).slice(2),
+      title: raw.Title || '',
+      summary: this._clamp(raw.Description, 200) || undefined,
+      author: (raw.Author && raw.Author.Title) || undefined,
+      meta: formatRelativeDate(dateStr),
+      url: raw.FileRef ? origin + raw.FileRef : undefined,
+      imageUrl: (raw.BannerImageUrl && raw.BannerImageUrl.Url) || undefined
     };
+
+    return { item, date: isNaN(time) ? 0 : time };
   }
 
-  /** Created timestamp (ms) from a row, for newest-first client-side sorting. */
-  private _created(row: ISearchRow): number {
-    for (const cell of row.Cells) {
-      if (cell.Key === 'Created' && cell.Value) {
-        const time = new Date(cell.Value).getTime();
-        return isNaN(time) ? 0 : time;
-      }
-    }
-    return 0;
+  private _origin(): string {
+    return this.context.pageContext.web.absoluteUrl.split('/').slice(0, 3).join('/');
   }
 
   private _clamp(text: string | undefined, max: number): string {

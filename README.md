@@ -42,18 +42,18 @@ The rendering layer is decoupled from the data via `INewsService`:
 - **`MockNewsService`** — built-in sample stories that mirror the design spec, keyed by
   `source`. Lets the web part render fully in the workbench and anywhere the live roll-up
   is turned off.
-- **`SharePointNewsService`** — rolls up modern SharePoint **news pages** using the Search
-  REST **POST `postquery`** endpoint (`PromotedState=2`; POST keeps the query in the body so
-  the querytext quotes aren't URL-encoded, which the GET endpoint rejects), sorted
-  client-side by most recent. `all` is tenant-wide; `growth` and
-  `you` scope to their sites via a `Path:` filter whose absolute URL is resolved from the
-  current tenant origin at runtime (no hard-coded host). Any failure degrades to a graceful
-  empty state rather than an error.
+- **`SharePointNewsService`** — reads modern SharePoint **News posts** (`PromotedState = 2`)
+  directly from each site's *Site Pages* library via the list REST API — deliberately **not**
+  the Search service, which proved unreliable on-tenant (the GET query endpoint URL-encodes
+  the querytext quotes; the POST endpoint 500s). `growth` and `you` query their own site;
+  `all` merges the firm's news sites; results are sorted newest-first, and a failure on any
+  one site is skipped rather than blanking the web part.
 
 To point the web part at live news, turn **Use sample content** off in the property pane.
 The named feeds live in `SITE_PATHS` at the top of `SharePointNewsService.ts` — edit those
-server-relative paths (or add more) if a feed moves. Category → pill-tone mapping in
-`newsUtils.ts` is intentionally simple and can be tuned to your managed properties.
+server-relative paths (or add more) if a feed moves. News posts carry no category column by
+default, so the coloured pill is omitted for live items; map a page column onto `category` /
+`tone` in `_mapItem` if you add one.
 
 ## Build & deploy
 

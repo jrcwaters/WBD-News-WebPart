@@ -29,9 +29,9 @@ collapse correctly inside narrow SharePoint columns, not just at viewport breakp
 | --- | --- | --- |
 | `title` | Text | Heading shown next to the yellow accent bar (e.g. "Firm News"). |
 | `layout` | Choice group | `lead` / `grid` / `compact`. |
-| `source` | Dropdown | `all` (firm news sites), `growth` (**Growth @ WBD** — `/sites/SPIN_OurStrategy`), `you` (**You & WBD** — `/sites/SPIN_News`), **`picker`** (*Search for a site…* — pick any site via Graph), `custom` (type a site URL). |
+| `source` | Dropdown | `all` (firm news sites), `growth` (**Growth @ WBD** — `/sites/SPIN_OurStrategy`), `you` (**You & WBD** — `/sites/SPIN_News`), **`picker`** (*Search for sites…* — search Graph and pick **one or more** sites), `custom` (type a site URL). |
 | `audience` | Text | Only for `all` (optional extra site URL) and `custom` (a **site URL**). Ignored for the named feeds and the site search. |
-| `selectedSiteUrl` / `selectedSiteTitle` | Site picker | Set by the *Search for a site…* control (custom property-pane field, Graph-backed). |
+| `selectedSites` | Site picker | `{ title, url }[]` chosen with the *Search for sites…* control; the service merges News from all of them. |
 | `itemCount` | Slider (1–8) | Number of stories to show. |
 | `seeAllText` / `seeAllUrl` | Text | Optional "See all" link in the header. |
 | `useMockData` | Toggle | **On** = built-in sample content (default, great for the workbench). **Off** = live SharePoint news. |
@@ -58,7 +58,7 @@ default, so the coloured pill is omitted for live items; map a page column onto 
 
 ## Site search (property pane) — requires admin approval
 
-The **Search for a site…** source uses a custom property-pane control
+The **Search for sites…** source uses a custom property-pane control
 (`propertyPane/PropertyPaneSitePicker.ts` + `SitePicker.tsx`) that searches sites via
 Microsoft Graph (`GET /sites?search=`, in `SiteSearchService.ts`). This needs the delegated
 Graph permission **`Sites.Read.All`**, declared in `package-solution.json`

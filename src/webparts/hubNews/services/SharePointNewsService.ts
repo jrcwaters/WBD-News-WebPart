@@ -66,26 +66,33 @@ export class SharePointNewsService implements INewsService {
 
   /** Resolves which site collection(s) to read News from for a given query. */
   private _targetSites(query: INewsQuery): string[] {
-    const origin = this._origin();
-
     if (query.source === 'growth' || query.source === 'you') {
-      return [origin + SITE_PATHS[query.source]];
+      return [this._origin() + SITE_PATHS[query.source]];
     }
 
-    if (query.source === 'custom' || query.source === 'picker') {
-      // 'custom' = a URL typed in; 'picker' = a URL chosen via the site search.
-      const audience = (query.audience || '').trim();
-      if (audience) {
-        const site = /^https?:\/\//i.test(audience)
-          ? audience.replace(/\/+$/, '')
-          : `${origin}/${audience.replace(/^\/+|\/+$/g, '')}`;
-        return [site];
-      }
-      return [this.context.pageContext.web.absoluteUrl.replace(/\/+$/, '')];
+    if (query.source === 'picker') {
+      // One or more sites chosen via the property-pane site search.
+      return (query.sites || []).map((site) => this._resolveSite(site)).filter((site) => site.length > 0);
+    }
+
+    if (query.source === 'custom') {
+      const site = this._resolveSite(query.audience || '');
+      return site ? [site] : [this.context.pageContext.web.absoluteUrl.replace(/\/+$/, '')];
     }
 
     // 'all' — the firm's news sites.
-    return [origin + SITE_PATHS.growth, origin + SITE_PATHS.you];
+    return [this._origin() + SITE_PATHS.growth, this._origin() + SITE_PATHS.you];
+  }
+
+  /** Resolves a site URL (absolute or server-relative) to a trimmed absolute URL. */
+  private _resolveSite(input: string): string {
+    const value = (input || '').trim();
+    if (!value) {
+      return '';
+    }
+    return /^https?:\/\//i.test(value)
+      ? value.replace(/\/+$/, '')
+      : `${this._origin()}/${value.replace(/^\/+|\/+$/g, '')}`;
   }
 
   private async _getSiteNews(siteUrl: string, top: number): Promise<IDatedItem[]> {

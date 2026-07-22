@@ -18,7 +18,7 @@ import { IHubNewsProps, NewsLayout } from './components/IHubNewsProps';
 import { NewsSource, INewsService } from './services/INewsService';
 import { MockNewsService } from './services/MockNewsService';
 import { SharePointNewsService } from './services/SharePointNewsService';
-import { SiteSearchService } from './services/SiteSearchService';
+import { SiteSearchService, ISite } from './services/SiteSearchService';
 import { PropertyPaneSitePicker } from './propertyPane/PropertyPaneSitePicker';
 
 export interface IHubNewsWebPartProps {
@@ -26,8 +26,7 @@ export interface IHubNewsWebPartProps {
   layout: NewsLayout;
   source: NewsSource;
   audience: string;
-  selectedSiteUrl: string;
-  selectedSiteTitle: string;
+  selectedSites: ISite[];
   itemCount: number;
   seeAllText: string;
   seeAllUrl: string;
@@ -49,15 +48,16 @@ export default class HubNewsWebPart extends BaseClientSideWebPart<IHubNewsWebPar
   public render(): void {
     const useMock: boolean = this.properties.useMockData !== false;
     const source: NewsSource = this.properties.source || 'all';
-    // For the 'picker' source the chosen site URL lives in its own property.
-    const audience: string =
-      source === 'picker' ? this.properties.selectedSiteUrl || '' : this.properties.audience || '';
+    const selectedSites: ISite[] = this.properties.selectedSites || [];
+    // For the 'picker' source, pass the selected site URLs; the service merges them.
+    const sites: string[] = source === 'picker' ? selectedSites.map((site) => site.url) : [];
 
     const element: React.ReactElement<IHubNewsProps> = React.createElement(HubNews, {
       title: this.properties.title || '',
       layout: this.properties.layout || 'lead',
       source,
-      audience,
+      audience: this.properties.audience || '',
+      sites,
       itemCount: this.properties.itemCount || 5,
       seeAllText: this.properties.seeAllText || '',
       seeAllUrl: this.properties.seeAllUrl || '',
@@ -84,12 +84,14 @@ export default class HubNewsWebPart extends BaseClientSideWebPart<IHubNewsWebPar
     }
   }
 
-  /** Called by the site picker when the author selects (or clears) a site. */
-  private _onSiteSelected(url: string, title: string): void {
-    this.properties.selectedSiteUrl = url;
-    this.properties.selectedSiteTitle = title;
+  /**
+   * Called by the site picker when the author adds/removes a site. Persists and
+   * re-renders the web part, but does NOT refresh the property pane — that would
+   * remount the picker and discard the in-progress search.
+   */
+  private _onSitesChanged(sites: ISite[]): void {
+    this.properties.selectedSites = sites;
     this.render();
-    this.context.propertyPane.refresh();
   }
 
   private _sourceGroupFields(): IPropertyPaneField<unknown>[] {
@@ -110,12 +112,11 @@ export default class HubNewsWebPart extends BaseClientSideWebPart<IHubNewsWebPar
 
     if (source === 'picker') {
       fields.push(
-        new PropertyPaneSitePicker('selectedSiteUrl', {
+        new PropertyPaneSitePicker('selectedSites', {
           label: strings.SitePickerLabel,
-          selectedUrl: this.properties.selectedSiteUrl || '',
-          selectedTitle: this.properties.selectedSiteTitle || '',
+          selected: this.properties.selectedSites || [],
           search: (query: string) => this._siteSearch.search(query),
-          onChanged: (url: string, title: string) => this._onSiteSelected(url, title)
+          onChanged: (updated: ISite[]) => this._onSitesChanged(updated)
         })
       );
     } else if (source === 'all' || source === 'custom') {

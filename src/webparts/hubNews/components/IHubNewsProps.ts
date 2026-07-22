@@ -12,6 +12,8 @@ export interface IHubNewsProps {
   source: NewsSource;
   /** Audience / scope qualifier. */
   audience: string;
+  /** For the 'picker' source: the selected site URLs to merge news from. */
+  sites: string[];
   /** How many stories to show. */
   itemCount: number;
   /** "See all" link caption (hidden when empty). */

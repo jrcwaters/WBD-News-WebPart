@@ -6,10 +6,9 @@ import { ISite } from '../services/SiteSearchService';
 
 export interface IPropertyPaneSitePickerProps {
   label: string;
-  selectedUrl: string;
-  selectedTitle: string;
+  selected: ISite[];
   search: (query: string) => Promise<ISite[]>;
-  onChanged: (url: string, title: string) => void;
+  onChanged: (sites: ISite[]) => void;
 }
 
 interface IPropertyPaneSitePickerInternalProps extends IPropertyPaneSitePickerProps {
@@ -20,7 +19,7 @@ interface IPropertyPaneSitePickerInternalProps extends IPropertyPaneSitePickerPr
 
 /**
  * A custom property-pane field that renders the {@link SitePicker} React control,
- * letting an author search for and select a SharePoint site to pull News from.
+ * letting an author search for and select one or more SharePoint sites to pull News from.
  */
 export class PropertyPaneSitePicker implements IPropertyPaneField<IPropertyPaneSitePickerInternalProps> {
   public type: PropertyPaneFieldType = PropertyPaneFieldType.Custom;
@@ -32,8 +31,7 @@ export class PropertyPaneSitePicker implements IPropertyPaneField<IPropertyPaneS
     this.properties = {
       key: targetProperty,
       label: props.label,
-      selectedUrl: props.selectedUrl,
-      selectedTitle: props.selectedTitle,
+      selected: props.selected,
       search: props.search,
       onChanged: props.onChanged,
       onRender: this._onRender.bind(this),
@@ -44,8 +42,7 @@ export class PropertyPaneSitePicker implements IPropertyPaneField<IPropertyPaneS
   private _onRender(elem: HTMLElement): void {
     const element: React.ReactElement<ISitePickerProps> = React.createElement(SitePicker, {
       label: this.properties.label,
-      selectedUrl: this.properties.selectedUrl,
-      selectedTitle: this.properties.selectedTitle,
+      selected: this.properties.selected,
       search: this.properties.search,
       onChanged: this.properties.onChanged
     });

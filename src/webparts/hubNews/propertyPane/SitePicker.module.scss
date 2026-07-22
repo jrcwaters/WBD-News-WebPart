@@ -10,13 +10,18 @@
   margin-bottom: 6px;
 }
 
-/* currently selected site */
+/* currently selected sites */
+.selectedList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
 .selected {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  margin-bottom: 8px;
   background: #f3f2f1;
   border: 1px solid #edebe9;
   border-radius: 4px;

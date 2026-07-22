@@ -14,11 +14,13 @@ export interface INewsQuery {
   /** Which roll-up to run. */
   source: NewsSource;
   /**
-   * Scope qualifier. Ignored for the named site feeds ('growth' / 'you').
-   *  - For 'all': an optional extra filter — a site URL (Path) or a search term.
-   *  - For 'custom': a site URL (adds a Path filter) or a raw KQL fragment.
+   * Scope qualifier. Ignored for the named site feeds ('growth' / 'you') and 'picker'.
+   *  - For 'all': an optional extra site URL.
+   *  - For 'custom': a site URL.
    */
   audience?: string;
+  /** For 'picker': the site URLs selected via the property-pane site search. */
+  sites?: string[];
   /** Maximum number of stories to return. */
   count: number;
 }

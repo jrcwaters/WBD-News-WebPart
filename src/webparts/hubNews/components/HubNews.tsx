@@ -9,7 +9,7 @@ import { CompactLayout } from './layouts/CompactLayout';
 type Status = 'loading' | 'ready' | 'empty' | 'error';
 
 const HubNews: React.FC<IHubNewsProps> = (props) => {
-  const { title, layout, source, audience, itemCount, seeAllText, seeAllUrl, service, dataMode } = props;
+  const { title, layout, source, audience, sites, itemCount, seeAllText, seeAllUrl, service, dataMode } = props;
 
   const [items, setItems] = React.useState<INewsItem[]>([]);
   const [status, setStatus] = React.useState<Status>('loading');
@@ -19,12 +19,16 @@ const HubNews: React.FC<IHubNewsProps> = (props) => {
   const serviceRef = React.useRef(service);
   serviceRef.current = service;
 
+  // Stable primitive so the fetch effect re-runs when the selected sites change.
+  const sitesKey = (sites || []).join('|');
+
   React.useEffect(() => {
     let cancelled = false;
     setStatus('loading');
 
+    const siteList = sitesKey ? sitesKey.split('|') : [];
     serviceRef.current
-      .getNews({ source, audience, count: itemCount })
+      .getNews({ source, audience, sites: siteList, count: itemCount })
       .then((result) => {
         if (cancelled) {
           return;
@@ -43,7 +47,7 @@ const HubNews: React.FC<IHubNewsProps> = (props) => {
     return () => {
       cancelled = true;
     };
-  }, [source, audience, itemCount, dataMode]);
+  }, [source, audience, sitesKey, itemCount, dataMode]);
 
   const renderLayout = (): React.ReactNode => {
     switch (layout) {

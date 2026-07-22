@@ -65,8 +65,8 @@ export class SharePointNewsService implements INewsService {
     const rowLimit = Math.min(50, Math.max(query.count || 5, 25));
 
     const params = [
-      `querytext='${encodeURIComponent(queryText)}'`,
-      `selectproperties='${encodeURIComponent(SELECT_PROPERTIES)}'`,
+      `querytext='${this._encodeQueryText(queryText)}'`,
+      `selectproperties='${SELECT_PROPERTIES}'`,
       `rowlimit=${rowLimit}`,
       `trimduplicates=false`,
       `clienttype='ContentSearchRegular'`
@@ -95,6 +95,16 @@ export class SharePointNewsService implements INewsService {
     const rows = json.PrimaryQueryResult?.RelevantResults?.Table?.Rows ?? [];
     console.info(`[Hub News] Query "${queryText}" returned ${rows.length} row(s).`);
     return rows;
+  }
+
+  /**
+   * Encodes the KQL for the `querytext` parameter WITHOUT touching the operators.
+   * SharePoint returns 500 "UnknownError" if `=` / `:` arrive percent-encoded
+   * (%3D / %3A) — a raw operator is required — so we only escape OData single
+   * quotes and encode spaces. (Verified against the tenant: raw `=` works.)
+   */
+  private _encodeQueryText(text: string): string {
+    return text.replace(/'/g, "''").replace(/ /g, '%20');
   }
 
   private _buildQueryText(query: INewsQuery): string {

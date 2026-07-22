@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
   "solution": {
-    "name": "hub-news-client-side-solution",
+    "name": "wbd-hub-news-client-side-solution",
     "id": "67455328-7e59-4e61-b74d-d6bfae15ae18",
     "version": "1.0.0.0",
     "includeClientSideAssets": true,
@@ -33,14 +33,14 @@
     },
     "features": [
       {
-        "title": "hub-news Feature",
-        "description": "The feature that activates elements of the hub-news solution.",
+        "title": "wbd-hub-news Feature",
+        "description": "The feature that activates elements of the wbd-hub-news solution.",
         "id": "1d4da233-d089-4806-9eb7-6030cd9cc9b4",
-        "version": "1.0.0.0"
+        "version": "1.1.0.0"
       }
     ]
   },
   "paths": {
-    "zippedPackage": "solution/hub-news.sppkg"
+    "zippedPackage": "solution/wbd-hub-news.sppkg"
   }
 }

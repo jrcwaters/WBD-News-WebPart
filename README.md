@@ -1,4 +1,4 @@
-# Hub News — SPFx web part
+# WBD Hub — News (`wbd-hub-news`)
 
 A single **configurable** SharePoint Framework news web part for the intranet ("The Hub").
 Drop it on a page as many times as you like and give each instance different property
@@ -6,9 +6,10 @@ settings — it is **one** web part, not three. A `layout` property switches bet
 presentation modes that all share the same card treatment, firm blue (`#173a70`) and
 yellow accent (`#ffc72c`) styling.
 
-This is a **standalone solution** with its own package (`hub-news.sppkg`) and an
-independent release lifecycle — it does not depend on, and is not bundled with, any other
-web part.
+This is a **standalone solution** with its own package (`wbd-hub-news.sppkg`) and an
+independent release lifecycle. It shares the WBD Hub look and feel and a few
+cross-cutting helpers (relative-date formatting and the sessionStorage cache) via the
+`@wbd/hub-core` library component, but carries no other web part's code.
 
 ## Layouts
 
@@ -80,14 +81,14 @@ npm install
 # local development against the hosted workbench
 gulp serve
 
-# production package -> ./sharepoint/solution/hub-news.sppkg
+# production package -> ./sharepoint/solution/wbd-hub-news.sppkg
 gulp bundle --ship
 gulp package-solution --ship
 ```
 
-Upload `hub-news.sppkg` to your tenant **App Catalog**, then add **Hub News** to a page
-from the *Text, media, and content* group in the web part toolbox. Add it multiple times
-and configure each instance independently.
+Upload `wbd-hub-news.sppkg` to your tenant **App Catalog**, then add **News** to a page
+from the **WBD Hub** group in the web part toolbox. Add it multiple times and configure
+each instance independently.
 
 ## Project structure
 

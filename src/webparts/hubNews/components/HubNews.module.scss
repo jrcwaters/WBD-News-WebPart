@@ -1,36 +1,37 @@
 /* ------------------------------------------------------------------ *
- * Hub News — styling ported 1:1 from the design spec.
- *   firm blue  #173a70   accent yellow #ffc72c   soft accent #fff4cc
- *   card radius 6px, resting + hover shadows, tag-pill tones, hovers.
+ * Hub News styling. Colours, shadows and radius now come from the shared
+ * WBD Hub theme (@wbd/hub-core), so this web part matches the Hero and
+ * My Meetings cards on the homepage. Local names below are thin aliases
+ * onto the shared tokens, keeping the layout rules untouched.
  * Layouts respond to the web part's own width via container queries,
  * so they collapse correctly inside narrow SharePoint columns.
  * ------------------------------------------------------------------ */
 
-$firm-blue: #173a70;
-$firm-blue-deep: #0f2850;
-$accent: #ffc72c;
-$accent-soft: #fff4cc;
-$accent-ink: #8a6400;
-$link: #2e5ea8;
-$ink: #252423;
-$ink-soft: #605e5c;
-$line: #e5e3e1;
-$card: #ffffff;
-$ok: #0b6a3c;
-$tag-firm-bg: #e5edf9;
-$tag-people-bg: #e7f3ec;
+@import '~@wbd/hub-core/styles/wbdTheme.scss';
 
-// Stronger resting shadow + hairline border so card edges read clearly on a
-// white SharePoint page (the spec's original shadow was near-invisible on white).
-$card-border: 1px solid #e6e4e1;
-$shadow: 0 1px 2px rgba(0, 0, 0, 0.09), 0 3px 8px rgba(0, 0, 0, 0.12);
-$shadow-hover: 0 8px 22px rgba(0, 0, 0, 0.18);
-$radius: 6px;
+$firm-blue: $wbd-blue;
+$firm-blue-deep: $wbd-blue-deep;
+$accent: $wbd-yellow;
+$accent-soft: $wbd-yellow-soft;
+$accent-ink: $wbd-accent-ink;
+$link: $wbd-action;
+$ink: $wbd-ink;
+$ink-soft: $wbd-ink-soft;
+$line: $wbd-line;
+$card: $wbd-card-bg;
+$ok: $wbd-tone-people-ink;
+$tag-firm-bg: $wbd-tone-firm-bg;
+$tag-people-bg: $wbd-tone-people-bg;
+
+$card-border: 1px solid $wbd-line;
+$shadow: $wbd-shadow;
+$shadow-hover: $wbd-shadow-hover;
+$radius: $wbd-radius;
 
 .hubNews {
   container-type: inline-size;
   container-name: hubnews;
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-family: $wbd-font;
   font-size: 14px;
   line-height: 1.45;
   color: $ink;

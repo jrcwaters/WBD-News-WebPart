@@ -1,7 +1,7 @@
 {
   "@microsoft/generator-sharepoint": {
     "whichFolder": "subdir",
-    "solutionName": "hub-news",
+    "solutionName": "wbd-hub-news",
     "solutionShortDescription": "Configurable Hub News web part",
     "environment": "spo",
     "packageManager": "npm",
@@ -17,7 +17,7 @@
     "nodeVersion": "22.22.2",
     "sdksVersions": {},
     "version": "1.21.1",
-    "libraryName": "hub-news",
+    "libraryName": "wbd-hub-news",
     "libraryId": "67455328-7e59-4e61-b74d-d6bfae15ae18"
   }
 }

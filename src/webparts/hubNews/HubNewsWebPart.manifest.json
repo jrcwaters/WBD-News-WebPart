@@ -16,9 +16,9 @@
   "supportsThemeVariants": true,
 
   "preconfiguredEntries": [{
-    "groupId": "cf066440-0614-43d6-98ae-0b31cf14c7c3", // Text, media, and content
-    "group": { "default": "Text, media, and content" },
-    "title": { "default": "Hub News" },
+    "groupId": "cf066440-0614-43d6-98ae-0b31cf14c7c3", // WBD Hub
+    "group": { "default": "WBD Hub" },
+    "title": { "default": "News" },
     "description": { "default": "Configurable news roll-up — Lead + list, Grid or Compact layout." },
     "officeFabricIconFontName": "News",
     "properties": {

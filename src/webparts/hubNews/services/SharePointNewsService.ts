@@ -2,7 +2,7 @@ import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import { INewsItem } from '../models/INewsItem';
 import { INewsService, INewsQuery } from './INewsService';
-import { formatRelativeDate } from './newsUtils';
+import { formatRelativeDate, cacheGet, cacheSet } from '@wbd/hub-core';
 
 interface IListItem {
   Title?: string;
@@ -33,6 +33,9 @@ const ITEM_QUERY: string =
   "$select=Title,FileRef,Description,BannerImageUrl,FirstPublishedDate,Created,Modified,Author/Title" +
   '&$expand=Author&$filter=PromotedState eq 2&$orderby=FirstPublishedDate desc';
 
+/** Brief sessionStorage cache (shared helper from @wbd/hub-core) — 5 minutes. */
+const NEWS_CACHE_TTL_MS: number = 5 * 60 * 1000;
+
 /**
  * Pulls modern SharePoint News posts (`PromotedState = 2`) directly from each site's
  * "Site Pages" library via the list REST API. This deliberately avoids the Search
@@ -50,6 +53,12 @@ export class SharePointNewsService implements INewsService {
     const top = Math.max(1, query.count || 5);
     const sites = this._targetSites(query);
 
+    const cacheKey = `WbdHubNews.${query.source}.${sites.join(',')}.${top}`;
+    const cached = cacheGet<INewsItem[]>(cacheKey, NEWS_CACHE_TTL_MS);
+    if (cached) {
+      return cached;
+    }
+
     const perSite = await Promise.all(
       sites.map((site) => this._getSiteNews(site, top).catch(() => [] as IDatedItem[]))
     );
@@ -61,7 +70,14 @@ export class SharePointNewsService implements INewsService {
       }
     }
     merged.sort((a, b) => b.date - a.date); // newest first
-    return merged.slice(0, top).map((entry) => entry.item);
+    const items = merged.slice(0, top).map((entry) => entry.item);
+
+    // Only cache real content, so a transient failure (which yields an empty
+    // roll-up) is retried rather than pinned for the whole TTL.
+    if (items.length > 0) {
+      cacheSet(cacheKey, items);
+    }
+    return items;
   }
 
   /** Resolves which site collection(s) to read News from for a given query. */

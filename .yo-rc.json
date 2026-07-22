@@ -1,0 +1,23 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "hub-news",
+    "solutionShortDescription": "Configurable Hub News web part",
+    "environment": "spo",
+    "packageManager": "npm",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "useHeft": false,
+    "componentType": "webpart",
+    "template": "react",
+    "componentName": "HubNews",
+    "componentDescription": "Configurable Hub News web part with Lead+list, Grid and Compact layouts",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.22.2",
+    "sdksVersions": {},
+    "version": "1.21.1",
+    "libraryName": "hub-news",
+    "libraryId": "67455328-7e59-4e61-b74d-d6bfae15ae18"
+  }
+}

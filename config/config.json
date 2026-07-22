@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "hub-news-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/hubNews/HubNewsWebPart.js",
+          "manifest": "./src/webparts/hubNews/HubNewsWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "HubNewsWebPartStrings": "lib/webparts/hubNews/loc/{locale}.js"
+  }
+}

@@ -2,12 +2,13 @@ import { INewsItem } from '../models/INewsItem';
 
 /**
  * News source that shapes which stories are rolled up:
- *  - 'all'    → everything the viewer can see (tenant-wide).
+ *  - 'all'    → the firm's news sites, merged.
  *  - 'growth' → the "Growth @ WBD" feed (/sites/SPIN_OurStrategy).
  *  - 'you'    → the "You & WBD" feed (/sites/SPIN_News).
- *  - 'custom' → scoped by a site URL or raw KQL in `audience`.
+ *  - 'picker' → a site chosen with the property-pane site search (URL in `audience`).
+ *  - 'custom' → a site URL typed into `audience`.
  */
-export type NewsSource = 'all' | 'growth' | 'you' | 'custom';
+export type NewsSource = 'all' | 'growth' | 'you' | 'picker' | 'custom';
 
 export interface INewsQuery {
   /** Which roll-up to run. */

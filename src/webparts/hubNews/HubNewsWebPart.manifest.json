@@ -26,6 +26,8 @@
       "layout": "lead",
       "source": "all",
       "audience": "",
+      "selectedSiteUrl": "",
+      "selectedSiteTitle": "",
       "itemCount": 5,
       "seeAllText": "See all news",
       "seeAllUrl": "",

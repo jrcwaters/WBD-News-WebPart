@@ -72,7 +72,8 @@ export class SharePointNewsService implements INewsService {
       return [origin + SITE_PATHS[query.source]];
     }
 
-    if (query.source === 'custom') {
+    if (query.source === 'custom' || query.source === 'picker') {
+      // 'custom' = a URL typed in; 'picker' = a URL chosen via the site search.
       const audience = (query.audience || '').trim();
       if (audience) {
         const site = /^https?:\/\//i.test(audience)

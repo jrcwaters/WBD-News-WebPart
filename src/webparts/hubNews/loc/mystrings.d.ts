@@ -13,7 +13,9 @@ declare interface IHubNewsWebPartStrings {
   SourceAll: string;
   SourceGrowth: string;
   SourceYou: string;
+  SourcePicker: string;
   SourceCustom: string;
+  SitePickerLabel: string;
   AudienceFieldLabel: string;
   AudienceFieldDescription: string;
   ItemCountFieldLabel: string;

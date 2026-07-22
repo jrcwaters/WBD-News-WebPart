@@ -123,8 +123,9 @@ const SAMPLE: Record<NewsSource, INewsItem[]> = {
       meta: 'Monday'
     }
   ],
-  // 'all' and 'custom' are built below from a blend of the named feeds.
+  // 'all', 'picker' and 'custom' are built below from a blend of the named feeds.
   all: [],
+  picker: [],
   custom: []
 };
 
@@ -137,6 +138,7 @@ SAMPLE.all = [
   SAMPLE.you[1]
 ];
 SAMPLE.custom = SAMPLE.all;
+SAMPLE.picker = SAMPLE.all;
 
 export class MockNewsService implements INewsService {
   public getNews(query: INewsQuery): Promise<INewsItem[]> {
